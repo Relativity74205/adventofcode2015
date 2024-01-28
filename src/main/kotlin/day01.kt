@@ -1,11 +1,9 @@
 
-private fun partA(lines: List<String>): Int {
-    val parenthesis = lines[0].map { if (it == '(') 1 else -1 }
+private fun partA(parenthesis: List<Int>): Int {
     return parenthesis.sumOf { it }
 }
 
-private fun partB(lines: List<String>): Int {
-    val parenthesis = lines[0].map { if (it == '(') 1 else -1 }
+private fun partB(parenthesis: List<Int>): Int {
     var floor = 0
     for (index in parenthesis.indices) {
         floor += parenthesis[index]
@@ -18,7 +16,8 @@ private fun partB(lines: List<String>): Int {
 
 fun main() {
     val lines = readFile(1, false)
+    val parenthesis = lines[0].map { if (it == '(') 1 else -1 }
 
-    println("Part A: ${partA(lines)}")
-    println("Part B: ${partB(lines)}")
+    println("Part A: ${partA(parenthesis)}")
+    println("Part B: ${partB(parenthesis)}")
 }
