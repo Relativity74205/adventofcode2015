@@ -1,6 +1,5 @@
 import java.lang.Exception
 
-// TODO create cache for a wire, if value is known, return it, otherwise calculate it
 private data class Wire(val identifier: String, val signalSource: String) {
     private var signalValue: Int? = null
 
@@ -16,19 +15,23 @@ private data class Wire(val identifier: String, val signalSource: String) {
         signalValue = value
     }
 
+    fun reset() {
+        signalValue = null
+    }
+
     fun processSignalSource(wires: Map<String, Wire>): Int {
-        val signalSourceParts = signalSource.split(" ")
         if (signalValue != null) {
             return signalValue!!
         }
+
+        val signalSourceParts = signalSource.split(" ")
         when (signalSourceParts.size) {
             1 -> {
                 signalValue = determineSignalValue(signalSourceParts[0], wires)
             }
             2 -> {
-                val signalSource = signalSourceParts[1]
-                val signalSourceValue = wires[signalSource]!!.processSignalSource(wires)
-                signalValue = Integer.parseInt(Integer.toBinaryString(signalSourceValue).padStart(16, '0').replace('0', '2').replace('1', '0').replace('2', '1'), 2)
+                val signalSource = determineSignalValue(signalSourceParts[1], wires)
+                signalValue = Integer.parseInt(Integer.toBinaryString(signalSource).padStart(16, '0').replace('0', '2').replace('1', '0').replace('2', '1'), 2)
             }
             3 -> {
                 when (val operation = signalSourceParts[1]) {
@@ -68,16 +71,16 @@ private fun getWire(line: String): Wire {
 }
 
 private fun partA(wireMap: Map<String, Wire>): Int {
-    val wireMapCopy = wireMap.map { it.key to it.value.copy() }.toMap()
-    return wireMapCopy["a"]!!.processSignalSource(wireMapCopy)
+    wireMap.forEach{ it.value.reset() }
+    return wireMap["a"]!!.processSignalSource(wireMap)
 }
 
 private fun partB(wireMap: Map<String, Wire>): Int {
-    val wireMapCopy = wireMap.map { it.key to it.value.copy() }.toMap()
-    val override = wireMapCopy["a"]!!.processSignalSource(wireMapCopy)
-    val wireMapCopy2 = wireMap.map { it.key to it.value.copy() }.toMap().toMutableMap()
-    wireMapCopy2["b"] = Wire("b", override.toString())
-    return wireMapCopy2["a"]!!.processSignalSource(wireMapCopy2.toMap())
+    wireMap.forEach{ it.value.reset() }
+    val override = wireMap["a"]!!.processSignalSource(wireMap)
+    wireMap.forEach{ it.value.reset() }
+    wireMap["b"]!!.setSignalValue(override)
+    return wireMap["a"]!!.processSignalSource(wireMap)
 }
 
 fun main() {
