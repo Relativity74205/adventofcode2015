@@ -25,7 +25,6 @@ private fun partA(input: String): Int {
 private fun partB(input: String): Int {
     var result = input
     for (i in 1..50) {
-        println(i)
         result = lookAndSay(result)
     }
     return result.length
