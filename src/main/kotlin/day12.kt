@@ -1,81 +1,125 @@
-private fun partA(line: String): Int {
-    val numbers = mutableListOf<Int>()
+interface JsonElement {
+    fun sum(isRed: Boolean): Int
+}
+
+class JsonArray : JsonElement {
+    private val elements = mutableListOf<JsonElement>()
+
+    override fun sum(isRed: Boolean): Int {
+        return elements.sumOf { it.sum(isRed) }
+    }
+
+    fun addElement(element: JsonElement) {
+        elements.add(element)
+    }
+}
+
+class JsonObject : JsonElement {
+    private val elements = mutableMapOf<String, JsonElement>()
+
+    override fun sum(isRed: Boolean): Int {
+        if (isRed && elements.values.any { it is JsonString && it.isRed() }) {
+            return 0
+        }
+        return elements.values.sumOf { it.sum(isRed) }
+    }
+
+    fun addElement(key: String, element: JsonElement) {
+        elements[key] = element
+    }
+}
+
+class JsonString(private val value: String) : JsonElement {
+    override fun sum(isRed: Boolean): Int {
+        return 0
+    }
+
+    fun isRed(): Boolean {
+        return value == "red"
+    }
+}
+
+class JsonNumber(private val value: Int) : JsonElement {
+    override fun sum(isRed: Boolean): Int {
+        return value
+    }
+}
+
+
+private fun findElements(s: String): List<String> {
+    val commaPositions = mutableListOf<Int>()
     var i = 0
-    while (i < line.length) {
-        val char = line[i]
-        if (char.isDigit()) {
-            var numberString = ""
-            if (i - 1 >= 0 && line[i - 1] == '-') {
-                numberString += "-"
+    var curlyBrackets = 0
+    var squareBrackets = 0
+    while (i < s.length) {
+        val char = s[i]
+        when (char) {
+            '{' -> curlyBrackets++
+            '}' -> curlyBrackets--
+            '[' -> squareBrackets++
+            ']' -> squareBrackets--
+            ',' -> {
+                if (curlyBrackets == 0 && squareBrackets == 0) {
+                    commaPositions.add(i)
+                }
             }
-            numberString += char.toString()
-            while (i + 1 < line.length && line[i + 1].isDigit()) {
-                numberString += line[i + 1]
-                i++
-            }
-            numbers.add(numberString.toInt())
         }
         i++
     }
 
-    return numbers.sum()
+    if (commaPositions.isEmpty()) {
+        return listOf(s)
+    }
+
+    val elements = mutableListOf(s.substring(0, commaPositions[0]))
+    for (commaPositionIndex in commaPositions.indices) {
+        val endOfSubstring = if (commaPositionIndex == commaPositions.indices.last()) {
+            s.length
+        } else {
+            commaPositions[commaPositionIndex + 1]
+        }
+        elements.add(s.substring(commaPositions[commaPositionIndex] + 1, endOfSubstring))
+    }
+
+    return elements.toList()
+}
+
+
+private fun parseJsonString(line: String): JsonElement {
+    when (line[0]) {
+        '{' -> {
+            val jsonObject = JsonObject()
+            val elements = findElements(line.substring(1, line.length - 1))
+            for (element in elements) {
+                val key = element.substring(1, element.indexOf(":") - 1)
+                val value = element.substring(element.indexOf(":") + 1, element.length)
+                jsonObject.addElement(key, parseJsonString(value))
+            }
+            return jsonObject
+        }
+        '[' -> {
+            val jsonArray = JsonArray()
+            val elements = findElements(line.substring(1, line.length - 1))
+            for (element in elements) {
+                jsonArray.addElement(parseJsonString(element))
+            }
+            return jsonArray
+        }
+        else -> {
+            if (line.toIntOrNull() != null) {
+                return JsonNumber(line.toInt())
+            }
+            return JsonString(line.substring(1, line.length - 1))
+        }
+    }
+}
+
+private fun partA(line: String): Int {
+    return parseJsonString(line).sum(false)
 }
 
 private fun partB(line: String): Int {
-    val numbers = mutableListOf<Int>()
-    var lastObjectBeginIndex = -1
-    var flagRedSequence = false
-    val redSequences = mutableListOf<Pair<Int, Int>>()
-    var i = 0
-    var countBrackets = 0
-    var inArray = false
-    while (i < line.length) {
-        val char = line[i]
-        if (char == '[') {
-            inArray = true
-        }
-        if (char == ']') {
-            inArray = false
-        }
-        if (i < line.length - 2 && line.subSequence(i, i + 3) == "red" && !inArray) {
-            flagRedSequence = true
-        }
-        if (char == '{' && !flagRedSequence) {
-            lastObjectBeginIndex = i
-            countBrackets = 1
-        }
-        if (char == '{' && flagRedSequence) {
-            countBrackets++
-        }
-        if (char == '}' && flagRedSequence) {
-            countBrackets--
-            if (countBrackets == 0) {
-                flagRedSequence = false
-                redSequences.add(Pair(lastObjectBeginIndex, i))
-            }
-        }
-        i++
-    }
-    println("Red sequences: $redSequences")
-    i = 0
-    while (i < line.length) {
-        val char = line[i]
-        if (char.isDigit() && !redSequences.any { i in it.first..it.second }) {
-            var numberString = ""
-            if (i - 1 >= 0 && line[i - 1] == '-') {
-                numberString += "-"
-            }
-            numberString += char.toString()
-            while (i + 1 < line.length && line[i + 1].isDigit()) {
-                numberString += line[i + 1]
-                i++
-            }
-            numbers.add(numberString.toInt())
-        }
-        i++
-    }
-
-    return numbers.sum()
+    return parseJsonString(line).sum(true)
 }
 
 fun main() {
@@ -83,10 +127,4 @@ fun main() {
 
     println("Part A: ${partA(lines[0])}")
     println("Part B: ${partB(lines[0])}")
-//    println("Part B: ${partB("""[1,{"c":"red","b":2},3]""")}")
-//    println("Part B: ${partB("""{"foo":1,{"c":"red","b":-22},"bar":-3}""")}")
 }
-
-
-//24683 too low
-//45362 too low
