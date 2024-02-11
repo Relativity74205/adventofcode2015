@@ -18,28 +18,29 @@ private data class Mapping(var map: Map<Pair<String, String>, Int>) {
     }
 
     fun permutations(): List<List<String>> {
+        fun _permutations(permutationParts: List<List<String>>, people: Set<String>): List<List<String>> {
+            val newPermutations = mutableListOf<List<String>>()
+            for (person in people) {
+                for (permutation in permutationParts) {
+                    if (person !in permutation) {
+                        val newPermutation = permutation.toMutableList()
+                        newPermutation.add(person)
+                        newPermutations.add(newPermutation)
+                    }
+                }
+            }
+            return newPermutations
+        }
+
         val peoples = getPeople()
-        var permutations = peoples.map { listOf(it) }
+        var permutations = listOf(listOf(peoples.first()))
         for (i in 1..<peoples.size) {
-            permutations = buildPermutation(permutations, peoples)
+            permutations = _permutations(permutations, peoples)
         }
 
         return permutations
     }
 
-    private fun buildPermutation(permutationParts: List<List<String>>, people: Set<String>): List<List<String>> {
-        val newPermutations = mutableListOf<List<String>>()
-        for (person in people) {
-            for (permutation in permutationParts) {
-                if (person !in permutation) {
-                    val newPermutation = permutation.toMutableList()
-                    newPermutation.add(person)
-                    newPermutations.add(newPermutation)
-                }
-            }
-        }
-        return newPermutations
-    }
 
     fun calculateHappiness(permutation: List<String>): Int {
         var happiness = 0
